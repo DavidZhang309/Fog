@@ -1,0 +1,3 @@
+[submodule "CoreFramework"]
+	path = CoreFramework
+	url = https://github.com/DavidZhang309/CoreFramework.git
