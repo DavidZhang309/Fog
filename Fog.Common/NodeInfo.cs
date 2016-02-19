@@ -12,19 +12,19 @@ namespace Fog.Common
         public string Name { get; private set; }
         public string Host { get; set; }
         public Guid TokenID { get; private set; }
-        public EntryTree EntryTree { get; private set; }
+        public Dictionary<Guid, FileStore> FileStores { get; private set; }
 
         public NodeInfo(string name)
         {
             Name = name;
             TokenID = Guid.NewGuid();
-            EntryTree = new EntryTree();
+            FileStores = new Dictionary<Guid, FileStore>();
         }
         public NodeInfo(Guid token, string name)
         {
             Name = name;
             TokenID = token;
-            EntryTree = new EntryTree();
+            FileStores = new Dictionary<Guid, FileStore>();
         }
 
         public override string ToString()

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using Fog.Common.Extension;
+
 namespace Fog.Common
 {
     public abstract class BaseEntry
@@ -103,11 +105,27 @@ namespace Fog.Common
             string hash = Convert.ToBase64String(VerifiedHash);
             return string.Format("{0}\t{1}\t{2}", time, hash, VirtualPath);
         }
+    }
 
-        public override bool Equals(object obj)
+    public class FileStoreEntry
+    {
+        private string storeIdStr;
+        
+        public FileStoreEntry(Guid store, FileEntry entry)
         {
-            FileEntry entry = obj as FileEntry;
-            return obj == null ? false : (VirtualPath == entry.VirtualPath && TimeOfUpdate == entry.TimeOfUpdate && Enumerable.SequenceEqual(VerifiedHash, entry.VerifiedHash));
+            StoreID = store;
+            Entry = entry;
+            storeIdStr = StoreID.ToHexString();
+        }
+
+        public Guid StoreID { get; private set; }
+        public FileEntry Entry { get; private set; }
+        public string FullPath
+        {
+            get
+            {
+                return storeIdStr + "/" + Entry.VirtualPath;
+            }
         }
     }
 
@@ -164,14 +182,16 @@ namespace Fog.Common
             //Get Directory where entry exists
             string[] pathData = GetPathData(entry.VirtualPath);
             EntryDirectoryNode pathNode = Navigate(pathData[0], true);
+            
             //check if entry exists
             if (pathNode.Entries.ContainsKey(pathData[1]))
             {
-                FileEntry currentEntry = pathNode.Entries[pathData[1]];
-                if (!currentEntry.Equals(entry))
+                FileEntry conflictEntry = pathNode.Entries[pathData[1]];
+                if (!Enumerable.SequenceEqual(entry.VerifiedHash, conflictEntry.VerifiedHash))
                 {
-                    //TODO: Figure out what to do with a conflict
+                    throw new InvalidOperationException("Current entry has different checksum");
                 }
+                //do nothing since path and checksum is same
             }
             else
             {
@@ -180,10 +200,25 @@ namespace Fog.Common
                 entries.Add(entry);
             }
         }
-        public void DeleteEntry(FileEntry node)
+        public void ReplaceFile(FileEntry entry)
         {
+            //Get Directory where entry exists
+            string[] pathData = GetPathData(entry.VirtualPath);
+            EntryDirectoryNode pathNode = Navigate(pathData[0], true);
 
-            entries.Remove(node);
+            //delete old if exists
+            if (pathNode.Entries.ContainsKey(pathData[1]))
+                DeleteEntry(pathNode.Entries[pathData[1]]);
+            //add entry
+            pathNode.Entries.Add(entry.VirtualName, entry);
+            entries.Add(entry);
+        }
+        public void DeleteEntry(FileEntry entry)
+        {
+            string[] pathData = GetPathData(entry.VirtualPath);
+            EntryDirectoryNode pathNode = Navigate(pathData[0], true);
+            pathNode.Entries.Remove(entry.VirtualName); //remove from tree
+            entries.Remove(entry); //remove from linked list
         }
         public FileEntry[] Entries
         {

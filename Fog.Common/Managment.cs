@@ -5,25 +5,40 @@ using System.Linq;
 using System.Text;
 
 using CoreFramework;
+using Fog.Common.Extension;
 
 namespace Fog.Common
 {
-    public class FileManagment
+    public class FileStore
     {
         private MD5CryptoServiceProvider hashProvider;
 
+        public Guid ID { get; private set; }
+        public string Name { get; private set; }
         public string StorePath { get; set; }
-        public EntryTree Entries { get; private set; }
+        public EntryTree EntryTree { get; private set; }
 
-        public FileManagment(EntryTree tree)
+        public FileStore(Guid id, string name, string storePath)
         {
-            Entries = tree;
+            ID = id;
+            Name = name;
+            StorePath = storePath;
+            EntryTree = new EntryTree();
+            hashProvider = new MD5CryptoServiceProvider();
+        }
+
+        public FileStore(Guid id, string name, string storePath, EntryTree tree)
+        {
+            ID = id;
+            Name = name;
+            StorePath = storePath;
+            EntryTree = tree;
             hashProvider = new MD5CryptoServiceProvider();
         }
 
         public bool CheckHash(string path)
         {
-            FileEntry entry = Entries.GetFile(path);
+            FileEntry entry = EntryTree.GetFile(path);
             return CheckHash(entry);
         }
         public bool CheckHash(FileEntry entry)
@@ -37,9 +52,11 @@ namespace Fog.Common
 
         public FileEntry CreateEntry(string path, Stream stream, DateTime timeOfUpdate)
         {
-            string[] pathData = EntryTree.GetPathData(path);
-            EntryDirectoryNode pathNode = Entries.Navigate(pathData[0], true);
             return new FileEntry(path, hashProvider.ComputeHash(stream), timeOfUpdate);
+        }
+        public FileStoreEntry GetEntry(string path)
+        {
+            return new FileStoreEntry(ID, EntryTree.GetFile(path));
         }
     }
 }

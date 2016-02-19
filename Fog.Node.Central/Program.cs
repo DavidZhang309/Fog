@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Configuration;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 using CoreFramework;
 using Fog.Common;
+using Fog.Common.Command;
 
 namespace Fog.Node.Central
 {
@@ -16,7 +18,7 @@ namespace Fog.Node.Central
             CommandConsole console = new CommandConsole() { PrintTimestamp = true, VerboseLevel = VerboseTag.Info };
             CentralNode node = new CentralNode(console);
             HttpNodeConnector connector = new HttpNodeConnector(node, 6680, true);
-            FileManagment fManager = new FileManagment(node.Entries) { StorePath = ".\\" };
+            FileStore fManager = new FileStore(Guid.Empty, "VirtualStore", ".\\", node.Entries);
 
             #region "Commands"
             //TODO: Package commands in a more elegant manner
@@ -79,32 +81,48 @@ namespace Fog.Node.Central
             })));
             console.RegisterCommand("permit_dir", new EventCommand(new Action<object, EventCmdArgs>((sender, eventArgs) =>
             {
-                EntryDirectoryNode dirNode = node.Entries.Navigate(eventArgs.Arguments[1], false);
-                if (dirNode == null)
+                if (eventArgs.Arguments.Length == 2)
                 {
-                    console.Print("directory does not exist");
-                    return;
+                    EntryDirectoryNode dirNode = node.Entries.Navigate(eventArgs.Arguments[1], false);
+                    if (dirNode == null)
+                    {
+                        console.Print("directory does not exist");
+                        return;
+                    }
+                    FileStore store = node.FileStores[Convert.ToInt32(eventArgs.Arguments[0])];
+                    foreach (FileEntry entry in dirNode.Entries.Values)
+                        store.EntryTree.AddFile(entry);
                 }
-                foreach (FileEntry entry in dirNode.Entries.Values)
+                else
                 {
-                    NodeInfo clientNode = node.Nodes[Convert.ToInt32(eventArgs.Arguments[0])];
-                    clientNode.EntryTree.AddFile(entry);
+                    console.Print("Usage: permit_dir [store_id] [virtual_path]");
                 }
             })));
             #endregion
+            
+            //DB Testing
+            //MySql.Data.MySqlClient.MySqlConnection dbConnector = new MySql.Data.MySqlClient.MySqlConnection("Server=127.0.0.1;Username=FogAdmin;Password=654987");
+            //dbConnector.Open();
+            //node.connection = dbConnector;
+            //Testing entry handling
+            //DbAccess.AddEntries(dbConnector, node.Entries.Entries);
+            
+            //Testing node handling
+            //DbAccess.AddNode(dbConnector, node.Nodes[0]);
+            //NodeInfo[] nodes = DbAccess.GetNode(dbConnector);
 
-            //node.LoadState();
-            console.Print(VerboseTag.Info, "Starting Service", true);
-            //node.Start();
+            node.LoadState();
             console.Print(VerboseTag.Info, "Started, Type 'help' for list of commands.", true);
+
+
 
             while (running)
             {
                 string input = Console.ReadLine();
                 console.Call(input, false, true);
             }
-
             console.Print("Stopping...");
+            //dbConnector.Close();
         }
     }
 }

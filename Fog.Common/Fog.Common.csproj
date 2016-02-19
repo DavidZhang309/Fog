@@ -35,8 +35,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommunicationNode.cs" />
-    <Compile Include="EventCommandValue.cs" />
+    <Compile Include="Comand\ConfigCommandValue.cs" />
+    <Compile Include="Comand\EventCommandValue.cs" />
     <Compile Include="Extension\BinaryExtensions.cs" />
+    <Compile Include="NodeConnector.cs" />
     <Compile Include="NodeInfo.cs" />
     <Compile Include="EntryTree.cs" />
     <Compile Include="Extension\GuidExtensions.cs" />

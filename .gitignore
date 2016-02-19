@@ -46,9 +46,11 @@ Network Trash Folder
 Temporary Items
 .apdisk
 packages/
+CoreFramework/
 Fog.Common/bin
 Fog.Common/obj
 Fog.Node.Central/bin
 Fog.Node.Central/obj
 Fog.Node.LocalNode/bin
 Fog.Node.LocalNode/obj
+Fog.suo

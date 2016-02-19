@@ -22,6 +22,7 @@ namespace Fog.Node.LocalNode
         {
             CommandConsole console = new CommandConsole();
             LocalNode node = new LocalNode(console);
+            HttpNodeConnector connector = new HttpNodeConnector(node, 6681, false);
 
             #region "Commands"
             console.RegisterCommand("help", new EventCommand(new Action<object, EventCmdArgs>((sender, eventArgs) =>
@@ -35,9 +36,8 @@ namespace Fog.Node.LocalNode
                 })));
             #endregion
 
-            node.Start();
+            connector.Start();
             Console.WriteLine("Started, Type 'help' for list of commands.");
-            
 
             while (Running)
             {

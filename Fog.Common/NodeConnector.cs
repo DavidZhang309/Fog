@@ -28,17 +28,29 @@ namespace Fog.Common
         {
             return DestinationNode.Register(accessToken, name);
         }
+        public Guid Add_Store(Guid token, string name)
+        {
+            return DestinationNode.AddStore(token, name);
+        }
         public void CheckIn(Guid token, IPEndPoint endPoint)
         {
             DestinationNode.CheckIn(token, endPoint);
         }
-        public OpTicket GetList(Guid token)
+        public OpTicket GetList(Guid storeId)
         {
-            return DestinationNode.GetList(token);
+            return DestinationNode.GetList(storeId);
         }
-        public string GetFile(Guid token, string path)
+        public string RepairRequest(Guid token, Guid storeID, string path)
         {
-            return GetFile(token, path);
+            return DestinationNode.RepairRequest(token, storeID, path);
+        }
+        public void ReceiveOpTicket(OpTicket ticket)
+        {
+            DestinationNode.ReceiveOpTicket(ticket);
+        }
+        public byte[] GetFile(Guid opID)
+        {
+            return DestinationNode.GetFile(opID);
         }
     }
     public class HttpNodeConnector : BaseNodeConnector
@@ -92,17 +104,31 @@ namespace Fog.Common
                     Guid resultToken = DestinationNode.Register(accessToken, name);
                     TryWrite(webContext.Response.OutputStream, resultToken.ToByteArray());
                     break;
+                case "/add_store":
+                    string storeName = webContext.Request.QueryString["name"];
+                    Guid storeID = DestinationNode.AddStore(token, storeName);
+                    TryWrite(webContext.Response.OutputStream, storeID.ToByteArray());
+                    break;
                 case "/checkin":
                     DestinationNode.CheckIn(token, webContext.Request.RemoteEndPoint);
                     break;
                 case "/repair":
+                    Guid store = webContext.Request.QueryString["store"].HexStringToGuid();
                     string path = webContext.Request.QueryString["path"];
-                    string link = DestinationNode.GetFile(token, path);
+                    string link = DestinationNode.RepairRequest(token, store, path);
                     TryWrite(webContext.Response.OutputStream, Encoding.UTF8.GetBytes(link));
                     break;
                 case "/poll_list":
                     OpTicket ticket = DestinationNode.GetList(token);
                     TryWrite(webContext.Response.OutputStream, ticket.Serialize());
+                    break;
+                case "/op_ticket":
+                    StreamReader reader = new StreamReader(webContext.Request.InputStream, webContext.Request.ContentEncoding);
+                    DestinationNode.ReceiveOpTicket(new OpTicket(webContext.Request.ContentEncoding.GetBytes(reader.ReadToEnd())));
+                    break;
+                case "/file":
+                    Guid opID = webContext.Request.QueryString["ticket"].HexStringToGuid();
+                    TryWrite(webContext.Response.OutputStream, DestinationNode.GetFile(opID));
                     break;
                 default:
                     webContext.Response.StatusCode = 404;

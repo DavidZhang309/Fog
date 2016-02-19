@@ -32,11 +32,39 @@ namespace Fog.Common
         {
             MySqlCommand command = connection.CreateCommand();
             StringBuilder builder = new StringBuilder("INSERT INTO fog.entry_data (Path, md5chksum, LastChange) VALUES ");
-            foreach (FileEntry entry in entries)
+            for (int i = 0; i < entries.Length; i++)
+            {
+                FileEntry entry = entries[i];
                 builder.Append(string.Format("('{0}', '{1}', '{2}')", entry.VirtualPath, entry.VerifiedHash.ToHexString(), entry.TimeOfUpdate.ToString("yyyy-MM-dd H:mm:ss")));
+                if (i != entries.Length - 1)
+                    builder.Append(", \n");
+            }
             builder.Append(";");
             command.CommandText = builder.ToString();
             command.ExecuteNonQuery();
+        }
+
+        public static void AddNode(MySqlConnection connection, NodeInfo node)
+        {
+            MySqlCommand command = connection.CreateCommand();
+            command.CommandText = "INSERT INTO fog.node_data (Token, Name, LastIP) VALUE (" + string.Format("'{0}', '{1}', '{2}'", node.TokenID.ToHexString(), node.Name, node.Host) + ");";
+            command.ExecuteNonQuery();
+        }
+
+        public static NodeInfo[] GetNode(MySqlConnection connection)
+        {
+            MySqlCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT Token, Name FROM fog.node_data;";
+            MySqlDataReader reader = command.ExecuteReader();
+            List<NodeInfo> nodes = new List<NodeInfo>();
+            while (reader.Read())
+            {
+                Guid token = reader.GetString("Token").HexStringToGuid();
+                string name = reader.GetString("Name");
+                nodes.Add(new NodeInfo(token, name));
+            }
+            reader.Close();
+            return nodes.ToArray();
         }
 
         //public static void AddTicket(MySqlConnection connection, OpTicket ticket)

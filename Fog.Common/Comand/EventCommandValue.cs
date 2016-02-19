@@ -5,7 +5,7 @@ using System.Text;
 
 using CoreFramework;
 
-namespace Fog.Common
+namespace Fog.Common.Command
 {
     public class CmdValueEventArgs : EventArgs
     {

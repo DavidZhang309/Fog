@@ -11,21 +11,24 @@ namespace Fog.Common
         public OpTicketType TicketType { get; private set; }
         public DateTime TicketCreationTime { get; private set; }
         public Guid OpID { get; private set; }
+        public Guid StoreID { get; private set; }
         public FileEntry[] Files { get; private set; }
 
-        public OpTicket(FileEntry[] files)
+        public OpTicket(Guid storeID, FileEntry[] files)
         {
             TicketType = OpTicketType.HashList;
             TicketCreationTime = DateTime.UtcNow;
             OpID = Guid.NewGuid();
+            StoreID = storeID;
             Files = files;
         }
 
-        public OpTicket(FileEntry file)
+        public OpTicket(Guid storeID, FileEntry file)
         {
             TicketType = OpTicketType.FileRepair;
             TicketCreationTime = DateTime.UtcNow;
             OpID = Guid.NewGuid();
+            StoreID = storeID;
             Files = new FileEntry[] { file };
         }
 
@@ -39,9 +42,12 @@ namespace Fog.Common
             byte[] guidData = new byte[16];
             Array.Copy(data, 1, guidData, 0, 16);
             OpID = new Guid(guidData);
-            TicketCreationTime = DateTime.FromBinary(BitConverter.ToInt64(data, 17));
-            Files = new FileEntry[data[25] * 256 + data[26]];
-            int index = 27;
+            Array.Copy(data, 17, guidData, 0, 16);
+            StoreID = new Guid(guidData);
+
+            TicketCreationTime = DateTime.FromBinary(BitConverter.ToInt64(data, 33));
+            Files = new FileEntry[data[41] * 256 + data[42]];
+            int index = 43;
             for (int i = 0; i < Files.Length; i++)
             {
                 byte[] fileData = new byte[data[index] * 256 + data[index + 1]];
@@ -65,13 +71,14 @@ namespace Fog.Common
                 fileInfoCount += fileData[i].Length + 2;
             }
 
-            byte[] result = new byte[27 + fileInfoCount];
+            byte[] result = new byte[43 + fileInfoCount];
             result[0] = (byte)TicketType;
             OpID.ToByteArray().CopyTo(result, 1);
-            BitConverter.GetBytes(TicketCreationTime.ToBinary()).CopyTo(result, 17);
-            result[25] = (byte)(Files.Length / 256);
-            result[26] = (byte)(Files.Length % 256);
-            int index = 27;
+            StoreID.ToByteArray().CopyTo(result, 17);
+            BitConverter.GetBytes(TicketCreationTime.ToBinary()).CopyTo(result, 33);
+            result[41] = (byte)(Files.Length / 256);
+            result[42] = (byte)(Files.Length % 256);
+            int index = 43;
             foreach (byte[] data in fileData)
             {
                 result[index] = (byte)(data.Length / 256);
